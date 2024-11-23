@@ -570,6 +570,48 @@ class Zypper(Packager):
         self.install(['podman'])
 
 
+class Apk(Packager):
+    DISTRO_NAMES = ['alpine']
+
+    def __init__(
+        self,
+        ctx: CephadmContext,
+        stable: Optional[str],
+        version: Optional[str],
+        branch: Optional[str],
+        commit: Optional[str],
+        distro: Optional[str],
+        distro_version: Optional[str],
+    ) -> None:
+        super(Apk, self).__init__(
+            ctx, stable=stable, version=version, branch=branch, commit=commit
+        )
+        assert distro
+        assert distro_version
+        self.ctx = ctx
+        self.distro = distro
+        self.distro_version = distro_version
+
+    def install(self, ls: List[str]) -> None:
+        logger.info('Installing packages %s...' % ls)
+        call_throws(self.ctx, ['apk', 'add', '--no-cache'] + ls)
+
+    def install_podman(self) -> None:
+        self.install(['podman'])
+
+    # technically not true, needs record additions in /etc/apk/repositories
+    def add_repo(self) -> None:
+        return
+
+    def rm_repo(self) -> None:
+        return
+
+    # slightly presumptive that alpine always runs openrc init
+    def enable_service(self, service: str) -> None:
+        call_throws(self.ctx, ['rc-update', 'add', service])
+        call_throws(self.ctx, ['rc-service', service, 'start'])
+
+
 def create_packager(
     ctx: CephadmContext,
     stable: Optional[str] = None,
@@ -601,6 +643,16 @@ def create_packager(
         )
     elif distro in Zypper.DISTRO_NAMES:
         return Zypper(
+            ctx,
+            stable=stable,
+            version=version,
+            branch=branch,
+            commit=commit,
+            distro=distro,
+            distro_version=distro_version,
+        )
+    elif distro in Apk.DISTRO_NAMES:
+        return Apk(
             ctx,
             stable=stable,
             version=version,

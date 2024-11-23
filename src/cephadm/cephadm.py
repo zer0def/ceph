@@ -4439,14 +4439,15 @@ def _rm_cluster(ctx: CephadmContext, keep_logs: bool, zap_osds: bool) -> None:
 def check_time_sync(ctx, enabler=None):
     # type: (CephadmContext, Optional[Packager]) -> bool
     units = [
-        'chrony.service',  # 18.04 (at least)
-        'chronyd.service',  # el / opensuse
+        'chrony.service', 'chrony',   # 18.04 (at least)
+        'chronyd.service', 'chronyd',  # el / opensuse
         'systemd-timesyncd.service',
-        'ntpd.service',  # el7 (at least)
-        'ntp.service',  # 18.04 (at least)
-        'ntpsec.service',  # 20.04 (at least) / buster
-        'openntpd.service',  # ubuntu / debian
-        'timemaster.service',  # linuxptp on ubuntu/debian
+        'systemd-timesyncd',
+        'ntpd.service', 'ntpd',  # el7 (at least)
+        'ntp.service', 'ntp',  # 18.04 (at least)
+        'ntpsec.service', 'ntpsec',  # 20.04 (at least) / buster
+        'openntpd.service', 'openntpd',  # ubuntu / debian
+        'timemaster.service', 'timemaster',  # linuxptp on ubuntu/debian
     ]
     if not check_units(ctx, units, enabler):
         logger.warning('No time sync service is running; checked for %s' % units)
