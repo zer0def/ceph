@@ -10,11 +10,12 @@ from ceph.fs.earmarking import (
 if 'UNITTEST' in os.environ:
     import tests  # noqa
 
-import bcrypt
+import base64
 import cephfs
 import contextlib
 import datetime
 import errno
+import hashlib
 import socket
 import time
 import logging
@@ -969,10 +970,12 @@ def profile_method(skip_attribute: bool = False) -> Callable[[Callable[..., T]],
 
 
 def password_hash(password: Optional[str], salt_password: Optional[str] = None) -> Optional[str]:
+    SCRYPT_SALT_LEN = 29
     if not password:
         return None
     if not salt_password:
-        salt = bcrypt.gensalt()
+        salt = os.urandom(SCRYPT_SALT_LEN)
     else:
-        salt = salt_password.encode('utf8')
-    return bcrypt.hashpw(password.encode('utf8'), salt).decode('utf8')
+        salt = base64.b64decode(salt_password)[:SCRYPT_SALT_LEN]
+    hash = hashlib.scrypt(password.encode('utf8'), salt=salt, n=2**14, r=8, p=1)
+    return base64.b64encode(salt + hash).decode('utf8')

@@ -3,6 +3,7 @@
 # pylint: disable=too-many-branches, too-many-locals, too-many-statements
 
 import errno
+import hmac
 import json
 import logging
 import re
@@ -12,7 +13,6 @@ from datetime import datetime, timedelta
 from string import ascii_lowercase, ascii_uppercase, digits, punctuation
 from typing import List, Optional, Sequence
 
-import bcrypt
 from mgr_module import CLICheckNonemptyFileInput, CLIReadCommand, CLIWriteCommand
 from mgr_util import password_hash
 
@@ -361,7 +361,7 @@ class User(object):
         :rtype: bool
         """
         pass_hash = password_hash(password, salt_password=self.password)
-        return pass_hash == self.password
+        return hmac.compare_digest(pass_hash, self.password)
 
     def is_pwd_expired(self):
         if self.pwd_expiration_date:
@@ -891,27 +891,6 @@ def ac_user_set_password(_, username: str, inbuf: str,
         return 0, json.dumps(user.to_dict()), ''
     except PasswordPolicyException as ex:
         return -errno.EINVAL, '', str(ex)
-    except UserDoesNotExist as ex:
-        return -errno.ENOENT, '', str(ex)
-
-
-@CLIWriteCommand('dashboard ac-user-set-password-hash')
-@CLICheckNonemptyFileInput(desc=DEFAULT_FILE_DESC)
-def ac_user_set_password_hash(_, username: str, inbuf: str):
-    '''
-    Set user password bcrypt hash from -i <file>
-    '''
-    hashed_password = inbuf
-    try:
-        # make sure the hashed_password is actually a bcrypt hash
-        bcrypt.checkpw(b'', hashed_password.encode('utf-8'))
-        user = mgr.ACCESS_CTRL_DB.get_user(username)
-        user.set_password_hash(hashed_password)
-
-        mgr.ACCESS_CTRL_DB.save()
-        return 0, json.dumps(user.to_dict()), ''
-    except ValueError:
-        return -errno.EINVAL, '', 'Invalid password hash'
     except UserDoesNotExist as ex:
         return -errno.ENOENT, '', str(ex)
 
