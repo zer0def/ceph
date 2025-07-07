@@ -362,7 +362,10 @@ def is_device(dev):
 
     TYPE = lsblk(dev).get('TYPE')
     if TYPE:
-        return TYPE in ['disk', 'mpath']
+        return any(filter(
+            lambda t: re.match(t, TYPE),
+            ['^disk$', '^mpath$', '^raid']
+        ))
 
     # fallback to stat
     return _stat_is_device(os.lstat(dev).st_mode) and not is_partition(dev)
@@ -824,9 +827,9 @@ def get_devices(_sys_block_path='/sys/block', device=''):
 
     block_devs = get_block_devs_sysfs(_sys_block_path)
 
-    block_types = ['disk', 'mpath', 'lvm', 'part']
+    block_types = ['^disk$', '^mpath$', '^lvm$', '^part$', '^raid']
     if allow_loop_devices():
-        block_types.append('loop')
+        block_types.append('^loop$')
 
     for block in block_devs:
         metadata: Dict[str, Any] = {}
@@ -834,7 +837,7 @@ def get_devices(_sys_block_path='/sys/block', device=''):
             block[1] = lvm.get_lv_path_from_mapper(block[1])
         devname = os.path.basename(block[0])
         diskname = block[1]
-        if block[2] not in block_types:
+        if not any(filter(lambda t: re.match(t, block[2]), block_types)):
             continue
         sysdir = os.path.join(_sys_block_path, devname)
         if block[2] == 'part':
