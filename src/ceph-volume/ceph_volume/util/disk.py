@@ -820,15 +820,15 @@ def get_devices(_sys_block_path='/sys/block', device=''):
 
     block_devs = get_block_devs_sysfs(_sys_block_path)
 
-    block_types = ['disk', 'mpath', 'part']
+    block_types = ['^disk$', '^mpath$', '^part$', '^raid']
     if allow_loop_devices():
-        block_types.append('loop')
+        block_types.append('^loop$')
 
     for block in block_devs:
         metadata: Dict[str, Any] = {}
         devname = os.path.basename(block[0])
         diskname = block[1]
-        if block[2] not in block_types:
+        if not any(filter(lambda t: re.match(t, block[2]), block_types)):
             continue
         sysdir = os.path.join(_sys_block_path, devname)
         if block[2] == 'part':
