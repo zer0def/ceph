@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import re
 from functools import total_ordering
 from ceph_volume import sys_info, allow_loop_devices, BEING_REPLACED_HEADER
 from ceph_volume.api import lvm
@@ -252,10 +253,10 @@ class Device(object):
             self.disk_api = dev
             device_type = dev.get('TYPE', '')
             # always check is this is an lvm member
-            valid_types = ['part', 'disk', 'mpath']
+            valid_types = ['^part$', '^disk$', '^mpath$', '^raid']
             if allow_loop_devices():
-                valid_types.append('loop')
-            if device_type in valid_types:
+                valid_types.append('^loop$')
+            if any(filter(lambda _vt: re.match(_vt, device_type), valid_types)):
                 self._set_lvm_membership()
 
         self.ceph_disk = CephDiskDevice(self)
@@ -506,10 +507,13 @@ class Device(object):
         elif self.blkid_api:
             api = self.blkid_api
         if api:
-            valid_types = ['disk', 'device', 'mpath']
+            valid_types = ['^disk$', '^device$', '^mpath$', '^raid']
             if allow_loop_devices():
-                valid_types.append('loop')
-            return self.device_type in valid_types
+                valid_types.append('^loop$')
+            return any(filter(
+                lambda _vt: re.match(_vt, self.device_type),
+                valid_types
+            ))
         return False
 
     @property
