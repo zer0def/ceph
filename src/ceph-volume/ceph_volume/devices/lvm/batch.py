@@ -42,7 +42,7 @@ def separate_devices_from_lvs(devices):
     phys = []
     lvm = []
     for d in devices:
-        phys.append(d) if d.is_device else lvm.append(d)
+        phys.append(d) if any([d.is_device, d.is_partition]) else lvm.append(d)
     return phys, lvm
 
 
@@ -209,14 +209,14 @@ class Batch(object):
         parser.add_argument(
             '--db-devices',
             nargs='*',
-            type=arg_validators.ValidBatchDevice(),
+            type=arg_validators.ValidDevice(),
             default=[],
             help='Devices to provision OSDs db volumes',
         )
         parser.add_argument(
             '--wal-devices',
             nargs='*',
-            type=arg_validators.ValidBatchDevice(),
+            type=arg_validators.ValidDevice(),
             default=[],
             help='Devices to provision OSDs wal volumes',
         )
