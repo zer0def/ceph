@@ -105,22 +105,8 @@ class ValidRawDevice(ValidDevice):
         super()._is_valid_device()
         return self._device
 
-class ValidBatchDevice(ValidDevice):
-    def __call__(self, dev_path):
-        super().get_device(dev_path)
-        return self._format_device(self._is_valid_device())
 
-    def _is_valid_device(self, raise_sys_exit=False):
-        super()._is_valid_device()
-        if self._device.is_partition:
-            raise argparse.ArgumentError(
-                None,
-                '{} is a partition, please pass '
-                'LVs or raw block devices'.format(self.dev_path))
-        return self._device
-
-
-class ValidBatchDataDevice(ValidBatchDevice, ValidDataDevice):
+class ValidBatchDataDevice(ValidDataDevice):
     def __call__(self, dev_path):
         super().get_device(dev_path)
         return self._format_device(self._is_valid_device())
